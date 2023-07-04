@@ -1,5 +1,7 @@
 import os
 
-modulePath = os.path.dirname(__file__)+'/'
+modulePath = os.path.dirname(__file__)
 
-dataPath = os.getenv('GMAGCP_PATH')+'/'
+dataPath = os.getenv('GMAGCP_PATH')
+
+profile = None
