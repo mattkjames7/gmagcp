@@ -33,6 +33,10 @@ def create(name='default',**kwargs):
     else:
         os.makedirs(profilePath)
 
+    out['path'] = profilePath
+    out['specPath'] = profilePath + '/spec'
+    
+
     fname = profilePath + '/config.cfg'
     with open(fname,'w') as f:
         json.dump(out,f,indent=2)
