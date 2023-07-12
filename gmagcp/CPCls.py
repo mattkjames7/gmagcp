@@ -5,33 +5,14 @@ import DateTimeTools as TT
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-
-
-from ..Tools.FigText import FigText
+from ..tools.figText import figText
 import groundmag as gm
-from scipy.interpolate import interp1d
-
-from ..Tools.CheckPath import CheckPath
-from .GetMagData import GetMagData
-from .ProcessMagData import ProcessMagData
-from .GetSpectrogram import GetSpectrogram
-from .. import Globals
-import wavespec as ws
-from ..PlumeFP.PlotEqMagFP import PlotEqMagPairFP
-from ..PlumeFP.TestEqFP import TestEqFP
-
-from ..Tools.PlotCPEigenfreqs import PlotCPEigenfreqs
-from ..Tools.kmeans import kmeans
-from ..Tools.aggclust import aggclust
-
-def Within(x,x0,x1):
-	
-	return ((x <= x0) & (x >= x1)) | ((x <= x1) & (x >= x0))
+from .data.getMagData import getMagData
+from .data.processMagData import processMagData
+from .data.getSpectrogram import getSpectrogram
 
 
-
-class CPCls(object):
+class CrossPhase(object):
 	def __init__(self,estn,pstn,Date):
 		self.estn = estn
 		self.pstn = pstn
@@ -60,59 +41,6 @@ class CPCls(object):
 				self.fail = True
 				return None
 
-	def _GetPos(self):
-		
-		self.px,self.py,self.pz = gm.Trace.MagPairTracePos(self.estn,self.pstn,self.Date,self.ut)
-		st0 = gm.GetStationInfo(self.estn,self.date)
-		st1 = gm.GetStationInfo(self.pstn,self.date)
-		
-		self.mlat = 0.5*(st0.mlat + st1.mlat)[0]
-		self.mlon = 0.5*(st0.mlon + st1.mlon)[0]
-		self.glat = 0.5*(st0.glat + st1.glat)[0]
-		self.glon = 0.5*(st0.glon + st1.glon)[0]
-			
-
-
-	def _GetData(self):
-		
-		#get both sets of processed data
-			
-			
-		print('Reading {:s} Data'.format(self.estn))
-		edata0 = GetMagData(self.estn,self.date,3600)
-		print('Processing {:s} Data'.format(self.estn))
-		self.edata = ProcessMagData(edata0,self.date)
-		print('Reading {:s} Data'.format(self.pstn))
-		pdata0 = GetMagData(self.pstn,self.date,3600)
-		print('Processing {:s} Data'.format(self.pstn))
-		self.pdata = ProcessMagData(pdata0,self.date)
-
-
-		
-	def _FFT(self):
-
-
-		espec = GetSpectrogram(self.edata,self.date)
-		self.eFFT = espec['xFFT']
-		pspec = GetSpectrogram(self.pdata,self.date)
-		self.pFFT = pspec['xFFT']
-			
-			
-		self.utc = espec['utc']	
-		self.Date,self.ut = TT.ContUTtoDate(self.utc)
-		self.utcax = espec['utcax']	
-		self.freq = espec['freq']	
-		self.freqax = espec['freqax']	
-		self.Tspec = espec['tsec']
-
-	
-	def _CrossPhases(self):
-
-		N0 = 3600.0/1.0
-		cp = ws.DetectWaves.CPWavesFFTSpec(self.Tspec,self.freq,self.eFFT,self.pFFT,N0)
-		self.cp = cp
-
-	
 						
 	def Plot(self,Param='Cpha_smooth',ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],zlog=False,scale=None,
 				cmap='Reds_r',zlabel='',nox=False,noy=False,ShowPP=True,ShowColorbar=True,PP='image',MaxDT=2.0):
@@ -173,7 +101,7 @@ class CPCls(object):
 				
 		
 		title = '{:s}-{:s} mlat={:5.2f}, mlon={:5.2f}'.format(self.estn.upper(),self.pstn.upper(),self.mlat,self.mlon)
-		FigText(ax,0.01,0.99,title,color='black',transform=ax.transAxes,ha='left',va='top')
+		figText(ax,0.01,0.99,title,color='black',transform=ax.transAxes,ha='left',va='top')
 		return ax
 
 
