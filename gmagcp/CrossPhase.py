@@ -10,36 +10,26 @@ import groundmag as gm
 from .data.getMagData import getMagData
 from .data.processMagData import processMagData
 from .data.getSpectrogram import getSpectrogram
+from .data.readCrossPhase import readCrossPhase
 
 
 class CrossPhase(object):
-	def __init__(self,estn,pstn,Date):
+	def __init__(self,estn,pstn,Date,ut=[0.0,24.0]):
 		self.estn = estn
 		self.pstn = pstn
 		self.date = Date
-		self.fpath = Globals.DataPath + 'CP/Spec/{:s}-{:s}/'.format(estn.upper(),pstn.upper())	
-		CheckPath(self.fpath)
-		self.fname = self.fpath + '{:08d}.bin'.format(self.date)		
+		self.ut = ut
+			
 		
-		if os.path.isfile(self.fname):
-			self.__dict__ = pf.LoadObject(self.fname)
-		else:
-			try:
-				# get the data for both stations
-				self._GetData()
-				
-				self._FFT()
-				
-				self._CrossPhases()
-				
-				self._GetPos()
-							
-				pf.SaveObject(self.__dict__,self.fname)
-				print('Saved: '+self.fname)
-			except:
-				print('Something went wrong')
-				self.fail = True
-				return None
+
+		try:
+			self.data = readCrossPhase()
+			for k in self.data:
+				setattr(self,k,self.data[k])
+		except:
+			print('Something went wrong')
+			self.fail = True
+			return None
 
 						
 	def Plot(self,Param='Cpha_smooth',ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],zlog=False,scale=None,
