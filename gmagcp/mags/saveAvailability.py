@@ -1,8 +1,9 @@
 import numpy as np
 import groundmag as gm
 import PyFileIO as pf
-from ..Tools.checkPath import checkPath
+from ..tools.checkPath import checkPath
 from .. import globs
+from .listMagPairs import listMagPairs
 
 def saveAvailability(estn,pstn):
 	'''
@@ -29,3 +30,12 @@ def saveAvailability(estn,pstn):
 	f = open(fname,'wb')
 	pf.ArrayToFile(dates,'int32',f)
 	f.close()
+
+
+def saveNetworkAvailability(Network=None,dLat=5.0,dLon=2.5):
+
+	pairs = listMagPairs(Network=Network,dLat=dLat,dLon=dLon)
+
+	for i,p in enumerate(pairs):
+		print('Saving pair availability {:d} of {:d} ({:s}-{:s})'.format(i+1,len(pairs),p[0],p[1]))
+		saveAvailability(p[0],p[1])

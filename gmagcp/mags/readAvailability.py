@@ -1,12 +1,12 @@
 import numpy as np
 import PyFileIO as pf
-from .. import Globals
+from .. import globs
 import os
 
 def readAvailability(estn,pstn):
 	
 	
-	fpath = Globals.DataPath + '/Availability'	
+	fpath = globs.DataPath + '/Availability'	
 	fname = fpath + '/{:s}-{:s}.bin'.format(estn,pstn)
 	
 	if not os.path.isfile(fname):

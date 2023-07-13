@@ -50,7 +50,7 @@ def read(name='default'):
 
     if os.path.isfile(fname):
 
-        with open(fname,'w') as f:
+        with open(fname,'r') as f:
             out = json.load(f)
 
         return out
