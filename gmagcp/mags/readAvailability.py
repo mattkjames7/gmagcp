@@ -6,7 +6,7 @@ import os
 def readAvailability(estn,pstn):
 	
 	
-	fpath = globs.DataPath + '/Availability'	
+	fpath = globs.dataPath + '/availability'	
 	fname = fpath + '/{:s}-{:s}.bin'.format(estn,pstn)
 	
 	if not os.path.isfile(fname):

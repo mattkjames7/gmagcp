@@ -5,11 +5,8 @@ import DateTimeTools as TT
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from ..tools.figText import figText
+from .tools.figText import figText
 import groundmag as gm
-from .data.getMagData import getMagData
-from .data.processMagData import processMagData
-from .data.getSpectrogram import getSpectrogram
 from .data.readCrossPhase import readCrossPhase
 
 
