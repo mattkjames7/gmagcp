@@ -70,7 +70,7 @@ def _getKVectors(xfft,yfft,zfft):
 	
 	return kx,ky,kz	
 
-def getSpectrogram(data,Date,window=3600,slip=300,Res=1.0,Freq0=0.0,Freq1=0.05):
+def getSpectrogram(data,Date,window=3600,slip=300,Res=1.0,Freq0=0.0,Freq1=0.05,detrend=2):
 
 
 	tsec = (data.utc - TT.ContUT(Date,0.0)[0])*3600.0
@@ -79,7 +79,9 @@ def getSpectrogram(data,Date,window=3600,slip=300,Res=1.0,Freq0=0.0,Freq1=0.05):
 	nw,i0,i1,tc,cnw,ci0,ci1,ctc = _getWindows(data,Date,window,slip,Res)
 	
 	#get the frequencies
-	nf,freq = _getFrequencies()
+	nf,freq = _getFrequencies(window,Res)
+	#nf = nf//2
+	#freq = freq[:nf+1]
 
 	#get the Fourier spectra
 	fft = {}
@@ -89,18 +91,19 @@ def getSpectrogram(data,Date,window=3600,slip=300,Res=1.0,Freq0=0.0,Freq1=0.05):
 
 	for f,c in zip(fields,comps):
 
-		fft[c+'FFT'] = np.zeros((nw,nf),dtype='complex128')
-		Bfield[f] = np.zeros((nw,),dtype='float64')
+		fft[c+'FFT'] = np.zeros((nw,nf),dtype='complex128').fill(np.nan)
+		Bfield[f] = np.zeros((nw,),dtype='float64').fill(np.nan)
 		for i in range(0,nw):
 			ind = np.arange(i0[i],i1[i])
 			t = tsec[ind]
-			b = ws.Tools.PolyDetrend(t,data[f][ind],2)
+			if np.isfinite(data[f][ind]).sum() > 2:
+				b = ws.Tools.PolyDetrend(t,data[f][ind],detrend)
 
-			Bfield[f][i] = np.nanmean(data[f][ind])
-			
-			pw,am,ph,fr,fi,_ = ws.Fourier.FFT(t,b,OneSided=True)
-
-			fft[c+'FFT'][i] = fr + 1.0j*fi
+				Bfield[f][i] = np.nanmean(data[f][ind])
+				
+				pw,am,ph,fr,fi,_ = ws.Fourier.FFT(t,b,OneSided=True)
+				print(pw.shape,fr.shape,fi.shape,fft[c+'FFT'].shape)
+				fft[c+'FFT'][i] = fr + 1.0j*fi
 
 	#limit frequency range
 	usef = np.where((freq >= Freq0) & (freq <= Freq1))[0]

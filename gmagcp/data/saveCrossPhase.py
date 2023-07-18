@@ -6,28 +6,36 @@ from .. import profile
 from ..tools.checkPath import checkPath
 import PyFileIO as pf
 
+
 def _processData(date,estn,pstn):
 
+    cfg = profile.get()
+    window = cfg['window']
+
     print('Reading {:s} Data'.format(estn))
-    edata0 = getMagData(estn,date,3600)
+    edata0 = getMagData(estn,date,window)
     print('Processing {:s} Data'.format(estn))
-    edata = processMagData(edata0,date)
+    edata = processMagData(edata0,date,Window=cfg['window'],Fmin=cfg['highPassFilter'],Fmax=cfg['lowPassFilter'])
     print('Reading {:s} Data'.format(pstn))
-    pdata0 = getMagData(pstn,date,3600)
+    pdata0 = getMagData(pstn,date,window)
     print('Processing {:s} Data'.format(pstn))
-    pdata = processMagData(pdata0,date)
+    pdata = processMagData(pdata0,window,Window=cfg['window'],Fmin=cfg['highPassFilter'],Fmax=cfg['lowPassFilter'])
 
 
     return edata,pdata
 
-def _fftData(edata,pdata):
+def _fftData(date,edata,pdata):
+
+    cfg = profile.get()
 
     print('Equatorward Spectrogram')
-    espec = getSpectrogram(edata,date)
+    espec = getSpectrogram(edata,date,window=cfg['window'],slip=cfg['slip'],
+                           Freq0=cfg['freq0'],Freq1=cfg['freq1'],detrend=cfg['detrend'])
     eFFT = espec['xFFT']
 
     print('Poleward Spectrogram')
-    pspec = getSpectrogram(pdata,date)
+    pspec = getSpectrogram(pdata,date,window=cfg['window'],slip=cfg['slip'],
+                           Freq0=cfg['freq0'],Freq1=cfg['freq1'],detrend=cfg['detrend'])
     pFFT = pspec['xFFT']
 
     return eFFT,pFFT
@@ -35,8 +43,9 @@ def _fftData(edata,pdata):
 
 def _cpData(efft,pfft):
 
+    cfg = profile.get()
     print('Cross Phase Spectra')
-    N0 = 3600.0/1.0
+    N0 = cfg['window']/1.0
     cp = ws.DetectWaves.CPWavesFFTSpec(efft['Tspec'],efft['freq'],efft,pfft,N0)
     return cp
 
@@ -71,7 +80,7 @@ def saveCrossPhase(date,estn,pstn):
     edata,pdata = _processData(date,estn,pstn)
 
     #fft the data
-    efft,pfft = _fftData(edata,pdata)
+    efft,pfft = _fftData(date,edata,pdata)
 
     #cross phase
     cp = _cpData(efft,pfft)

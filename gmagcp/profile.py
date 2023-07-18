@@ -11,8 +11,8 @@ default = {
     'freq0' : 0.0,
     'freq1' : 0.1,
     'detrend' : 2,
-    'lowPassFilter' : 0.0,
-    'highPassFilter' : 0.0,
+    'lowPassFilter' : 0.05,
+    'highPassFilter' : 0.0001,
     'windowFunc' : 'none',
 }
 
