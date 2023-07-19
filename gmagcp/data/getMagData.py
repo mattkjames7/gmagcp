@@ -1,8 +1,9 @@
 import numpy as np
 import DateTimeTools as TT
 import groundmag as gm
+from .. import profile
 
-def getMagData(stn,Date,Window=0.0):
+def getMagData(stn,Date):
 	'''
 	Get the magnetometer data from a specific date.
 	
@@ -10,7 +11,8 @@ def getMagData(stn,Date,Window=0.0):
 	
 
 	#find the window length
-	hw = Window/3600
+	window = profile.get()['window']
+	hw = window/3600
 	
 	#get the time limits	
 	Date0 = TT.MinusDay(Date)

@@ -5,7 +5,10 @@ from .getSpectrogram import getSpectrogram
 from .. import profile
 from ..tools.checkPath import checkPath
 import PyFileIO as pf
-
+import wavespec as ws
+import groundmag as gm
+import DateTimeTools as TT
+import os
 
 def _processData(date,estn,pstn):
 
@@ -13,14 +16,13 @@ def _processData(date,estn,pstn):
     window = cfg['window']
 
     print('Reading {:s} Data'.format(estn))
-    edata0 = getMagData(estn,date,window)
+    edata0 = getMagData(estn,date)
     print('Processing {:s} Data'.format(estn))
-    edata = processMagData(edata0,date,Window=cfg['window'],Fmin=cfg['highPassFilter'],Fmax=cfg['lowPassFilter'])
+    edata = processMagData(edata0,date)
     print('Reading {:s} Data'.format(pstn))
-    pdata0 = getMagData(pstn,date,window)
+    pdata0 = getMagData(pstn,date)
     print('Processing {:s} Data'.format(pstn))
-    pdata = processMagData(pdata0,window,Window=cfg['window'],Fmin=cfg['highPassFilter'],Fmax=cfg['lowPassFilter'])
-
+    pdata = processMagData(pdata0,date)
 
     return edata,pdata
 
@@ -29,31 +31,33 @@ def _fftData(date,edata,pdata):
     cfg = profile.get()
 
     print('Equatorward Spectrogram')
-    espec = getSpectrogram(edata,date,window=cfg['window'],slip=cfg['slip'],
-                           Freq0=cfg['freq0'],Freq1=cfg['freq1'],detrend=cfg['detrend'])
+    espec = getSpectrogram(edata,date)
     eFFT = espec['xFFT']
 
     print('Poleward Spectrogram')
-    pspec = getSpectrogram(pdata,date,window=cfg['window'],slip=cfg['slip'],
-                           Freq0=cfg['freq0'],Freq1=cfg['freq1'],detrend=cfg['detrend'])
+    pspec = getSpectrogram(pdata,date)
     pFFT = pspec['xFFT']
 
-    return eFFT,pFFT
+    tSpec = espec['utc']
+    freq = espec['freq']
+
+    return tSpec,freq,eFFT,pFFT
 
 
-def _cpData(efft,pfft):
+def _cpData(tSpec,freq,efft,pfft):
 
     cfg = profile.get()
     print('Cross Phase Spectra')
     N0 = cfg['window']/1.0
-    cp = ws.DetectWaves.CPWavesFFTSpec(efft['Tspec'],efft['freq'],efft,pfft,N0)
+    cp = ws.DetectWaves.CPWavesFFTSpec(tSpec,freq,efft,pfft,N0)
     return cp
 
 
-def _magPos(date,estn,pstn):
+def _magPos(date,estn,pstn,tspec):
 
+    Date,ut = TT.ContUTtoDate(tspec)
     print('Mag Pos')
-    px,py,pz = gm.Trace.MagPairTracePos(estn,pstn,estn['Date'],estn['ut'])
+    px,py,pz = gm.Trace.MagPairTracePos(estn,pstn,Date,ut)
     st0 = gm.GetStationInfo(estn,date)
     st1 = gm.GetStationInfo(pstn,date)
 
@@ -80,13 +84,13 @@ def saveCrossPhase(date,estn,pstn):
     edata,pdata = _processData(date,estn,pstn)
 
     #fft the data
-    efft,pfft = _fftData(date,edata,pdata)
+    tSpec,freq,efft,pfft = _fftData(date,edata,pdata)
 
     #cross phase
-    cp = _cpData(efft,pfft)
+    cp = _cpData(tSpec,freq,efft,pfft)
 
     #get the magnetometer position for tracing
-    pos = _magPos(date,estn,pstn)
+    pos = _magPos(date,estn,pstn,tSpec)
 
     out = {
         'edata' : edata,
@@ -101,7 +105,7 @@ def saveCrossPhase(date,estn,pstn):
     cfg = profile.get()
     checkPath(cfg['specPath'])
 
-    pairPath = cfg['path'] + '/{:s}-{:s}'.format(estn,pstn)
+    pairPath = cfg['specPath'] + '/{:s}-{:s}'.format(estn,pstn)
     if not os.path.isdir(pairPath):
         os.makedirs(pairPath)
 

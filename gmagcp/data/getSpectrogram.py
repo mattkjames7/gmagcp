@@ -2,9 +2,15 @@ import numpy as np
 import DateTimeTools as TT
 import groundmag as gm
 import wavespec as ws
+from .. import profile
 
-def _getWindows(data,Date,window=3600,slip=300,Res=1.0):
+def _getWindows(data,Date):
 	
+	cfg = profile.get()
+	window = cfg['window']
+	slip = cfg['slip']
+	res = cfg.get('res',1.0)
+
 	#get current time axis in seconds
 	utc0 = TT.ContUT(Date,0.0)[0]
 	tsec = (data.utc - utc0)*3600.0
@@ -22,8 +28,8 @@ def _getWindows(data,Date,window=3600,slip=300,Res=1.0):
 	t1 = t0 + window
 	tc = np.float64(t0) + window/2.0
 	
-	i0 = np.int32(np.round((t0 + window)/Res))
-	i1 = np.int32(np.round((t1 + window)/Res))
+	i0 = np.int32(np.round((t0 + window)/res))
+	i1 = np.int32(np.round((t1 + window)/res))
 
 	
 	#now the groups of windows for coherence
@@ -35,9 +41,14 @@ def _getWindows(data,Date,window=3600,slip=300,Res=1.0):
 	
 	return nw,i0,i1,tc,cnw,ci0,ci1,ctc
 	
-def _getFrequencies(window=3600,Res=1.0):
-	
-	freq = np.arange(window+1,dtype='float64')/(np.float32(window*Res))
+def _getFrequencies():
+
+	cfg = profile.get()
+	window = cfg['window']
+	res = cfg.get('res',1.0)
+
+
+	freq = np.arange(window+1,dtype='float64')/(np.float32(window*res))
 	nf = np.size(freq) - 1
 	nf = nf//2
 	freq = freq[:nf]		
@@ -70,16 +81,23 @@ def _getKVectors(xfft,yfft,zfft):
 	
 	return kx,ky,kz	
 
-def getSpectrogram(data,Date,window=3600,slip=300,Res=1.0,Freq0=0.0,Freq1=0.05,detrend=2):
+def getSpectrogram(data,Date):
 
+	cfg = profile.get()
+	window = cfg['window']
+	slip = cfg['slip']
+	res = cfg.get('res',1.0)
+	freq0 = cfg['freq0']
+	freq1 = cfg['freq1']
+	detrend = cfg['detrend']
 
 	tsec = (data.utc - TT.ContUT(Date,0.0)[0])*3600.0
 	
 	#calculate windows
-	nw,i0,i1,tc,cnw,ci0,ci1,ctc = _getWindows(data,Date,window,slip,Res)
+	nw,i0,i1,tc,cnw,ci0,ci1,ctc = _getWindows(data,Date)
 	
 	#get the frequencies
-	nf,freq = _getFrequencies(window,Res)
+	nf,freq = _getFrequencies()
 	#nf = nf//2
 	#freq = freq[:nf+1]
 
@@ -91,8 +109,8 @@ def getSpectrogram(data,Date,window=3600,slip=300,Res=1.0,Freq0=0.0,Freq1=0.05,d
 
 	for f,c in zip(fields,comps):
 
-		fft[c+'FFT'] = np.zeros((nw,nf),dtype='complex128').fill(np.nan)
-		Bfield[f] = np.zeros((nw,),dtype='float64').fill(np.nan)
+		fft[c+'FFT'] = np.zeros((nw,nf),dtype='complex128')
+		Bfield[f] = np.zeros((nw,),dtype='float64')
 		for i in range(0,nw):
 			ind = np.arange(i0[i],i1[i])
 			t = tsec[ind]
@@ -102,11 +120,13 @@ def getSpectrogram(data,Date,window=3600,slip=300,Res=1.0,Freq0=0.0,Freq1=0.05,d
 				Bfield[f][i] = np.nanmean(data[f][ind])
 				
 				pw,am,ph,fr,fi,_ = ws.Fourier.FFT(t,b,OneSided=True)
-				print(pw.shape,fr.shape,fi.shape,fft[c+'FFT'].shape)
 				fft[c+'FFT'][i] = fr + 1.0j*fi
+			else:
+				Bfield[f][i].fill(np.nan)
+				fft[c+'FFT'][i].fill(np.nan)
 
 	#limit frequency range
-	usef = np.where((freq >= Freq0) & (freq <= Freq1))[0]
+	usef = np.where((freq >= freq0) & (freq <= freq1))[0]
 	keys = list(fft.keys())
 	for k in keys:
 		fft[k] = fft[k][:,usef]

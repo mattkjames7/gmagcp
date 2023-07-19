@@ -2,6 +2,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 import DateTimeTools as TT
 import wavespec as ws
+from .. import profile
 
 def _listGaps(good):
 	'''
@@ -34,7 +35,7 @@ def _listGoodElements(data):
 	
 	return good	
 
-def _fillDataGaps(data,MaxGap=300,):
+def _fillDataGaps(data,MaxGap=300):
 	'''
 	Try and fill bad data gaps.
 	
@@ -67,20 +68,22 @@ def _fillDataGaps(data,MaxGap=300,):
 	return data
 
 		
-def _resampleData(data0,Date,Res=1.0,Window=3600.0,MaxGap=300.0):
+def _resampleData(data0,Date,MaxGap=300.0):
 	'''
 	Resample data to a custom resolution
 	
 	'''
 
 	
-	#get the resolution in seconds
-	res = Res
+	cfg = profile.get()
+	window = cfg['window']
+	res = cfg.get('res',1.0)
+
 
 	
 	#get the newtime axis
-	n = np.int32(np.round((86400 + 2*Window)/res))
-	tsec = np.arange(n,dtype='float64')*res - Window
+	n = np.int32(np.round((86400 + 2*window)/res))
+	tsec = np.arange(n,dtype='float64')*res - window
 	utc0 = TT.ContUT(Date,0.0)[0]
 	utc = utc0 + tsec/3600.0
 	tsec0 = (data0.utc - utc0)*3600.0	
@@ -121,8 +124,12 @@ def _resampleData(data0,Date,Res=1.0,Window=3600.0,MaxGap=300.0):
 	return data
 
 
-def _filterData(data,Res,Fmin=0.0015,Fmax=0.05):
+def _filterData(data):
 	
+	cfg = profile.get()
+	res = cfg.get('res',1.0)
+	fmin = cfg['highPassFilter']
+	fmax = cfg['lowPassFilter']
 	
 
 	#time axis
@@ -132,19 +139,19 @@ def _filterData(data,Res,Fmin=0.0015,Fmax=0.05):
 
 
 	#filter the data
-	if not Fmax is None:
+	if not fmax is None:
 		print('Low-pass filtering B field')
-		Filter = Fmax
-		data.Bx = ws.Filter.Filter(data.Bx,Res,low=1/Filter)
-		data.By = ws.Filter.Filter(data.By,Res,low=1/Filter)
-		data.Bz = ws.Filter.Filter(data.Bz,Res,low=1/Filter)
+		Filter = fmax
+		data.Bx = ws.Filter.Filter(data.Bx,res,low=1/Filter)
+		data.By = ws.Filter.Filter(data.By,res,low=1/Filter)
+		data.Bz = ws.Filter.Filter(data.Bz,res,low=1/Filter)
 
 		
-	if not Fmin is None:
+	if not fmin is None:
 		print('Removing Long-Period Background Stuff')
-		lpBx = ws.Filter.Filter(data.Bx,Res,low=1/Fmin,KeepDC=False)
-		lpBy = ws.Filter.Filter(data.By,Res,low=1/Fmin,KeepDC=False)
-		lpBz = ws.Filter.Filter(data.Bz,Res,low=1/Fmin,KeepDC=False)
+		lpBx = ws.Filter.Filter(data.Bx,res,low=1/fmin,KeepDC=False)
+		lpBy = ws.Filter.Filter(data.By,res,low=1/fmin,KeepDC=False)
+		lpBz = ws.Filter.Filter(data.Bz,res,low=1/fmin,KeepDC=False)
 		data.Bx -= lpBx
 		data.By -= lpBy
 		data.Bz -= lpBz
@@ -153,20 +160,21 @@ def _filterData(data,Res,Fmin=0.0015,Fmax=0.05):
 	return data
 	
 	
-def processMagData(data,Date,Res=1.0,Window=3600.0,MaxGap=300.0,Fmin=0.0015,Fmax=0.05):
+def processMagData(data,Date,MaxGap=300.0):
 	'''
 	Take the magnetometer data and do some preprocessing (e.g. filtering,
 	resampling)
 	
 	'''
-	
+
+
 	#fill gaps
 	data = _fillDataGaps(data,MaxGap)
 	
 	#resample
-	data = _resampleData(data,Date,Res,Window,MaxGap)
+	data = _resampleData(data,Date,MaxGap)
 	
 	#filter
-	data = _filterData(data,Res,Fmin,Fmax)
+	data = _filterData(data)
 	
 	return data
