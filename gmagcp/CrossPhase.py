@@ -7,38 +7,52 @@ import matplotlib.colors as colors
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from .tools.figText import figText
 import groundmag as gm
-from .data.readCrossPhase import readCrossPhase
+from .data.getCrossPhase import getCrossPhase
+from . import profile
 
 
 class CrossPhase(object):
-	def __init__(self,estn,pstn,Date,ut=[0.0,24.0]):
+	def __init__(self,Date,estn,pstn):
 		self.estn = estn
 		self.pstn = pstn
 		self.date = Date
-		self.ut = ut
 			
 		
 
 		try:
-			self.data = readCrossPhase()
+			self.data = getCrossPhase(Date,estn,pstn)
 			for k in self.data:
 				setattr(self,k,self.data[k])
-		except:
+			self.freq = self.cp['F']
+			df = self.freq[1] - self.freq[0]
+			self.freqax = np.append(self.freq,self.freq[-1]+df)
+			self.tspec = self.cp['Tspec']/3600.0
+			windowh = profile.get()['window']/7200.0
+			self.tax = np.append(self.tspec-windowh,self.tspec[-1]+windowh)
+		except Exception as e:
 			print('Something went wrong')
+			print(e)
 			self.fail = True
 			return None
 
 						
-	def Plot(self,Param='Cpha_smooth',ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],zlog=False,scale=None,
-				cmap='Reds_r',zlabel='',nox=False,noy=False,ShowPP=True,ShowColorbar=True,PP='image',MaxDT=2.0):
+	def Plot(self,Param='Cpha_smooth',date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],zlog=False,scale=None,
+				cmap='seismic',zlabel='',nox=False,noy=False,ShowPP=True,ShowColorbar=True,PP='image',MaxDT=2.0):
 		
 		
+		if date is None:
+			date = [np.min(self.date),np.max(self.date)]
+		
+
 		#get ut range
-		uset = np.where((self.ut >= ut[0]) & (self.ut <= ut[1]))[0]
+		ut0,ut1 = TT.ContUT(date,ut)
+
+		uset = np.where((self.tspec >= ut0) & (self.tspec <= ut1))[0]
 		t0 = uset[0]
 		t1 = uset[-1] + 1
-		utc = self.utcax[t0:t1+1]
-				
+		utc = self.tax[t0:t1+1]
+
+
 		#and frequency range
 		if flim is None:
 			f0 = 0
@@ -79,15 +93,9 @@ class CrossPhase(object):
 		else:
 			ax.set_ylabel('$f$ (mHz)')
 			
-			
-		if ShowPP:
-			nc,_,_,_,cutc = TestEqFP(self.estn,self.pstn,self.date,ut=ut,PP=PP,MaxDT=MaxDT)
-			if nc > 0:
-				ax.vlines(cutc,flim[0],flim[1],color='black',linewidth=2)
-				ax.vlines(cutc,flim[0],flim[1],color='lime',linestyle='--')
 				
 		
-		title = '{:s}-{:s} mlat={:5.2f}, mlon={:5.2f}'.format(self.estn.upper(),self.pstn.upper(),self.mlat,self.mlon)
+		title = '{:s}-{:s} mlat={:5.2f}, mlon={:5.2f}'.format(self.estn.upper(),self.pstn.upper(),self.pos['mlat'],self.pos['mlon'])
 		figText(ax,0.01,0.99,title,color='black',transform=ax.transAxes,ha='left',va='top')
 		return ax
 
@@ -102,6 +110,7 @@ class CrossPhase(object):
 				scale = [np.nanmin(grid[grid > 0]),np.nanmax(grid)]
 			else:
 				scale = [np.nanmin(grid),np.nanmax(grid)]
+				scale = [-np.nanmax(scale),np.nanmax(scale)]
 		
 		#set norm
 		if zlog:

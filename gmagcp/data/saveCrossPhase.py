@@ -49,7 +49,7 @@ def _cpData(tSpec,freq,efft,pfft):
     cfg = profile.get()
     print('Cross Phase Spectra')
     N0 = cfg['window']/1.0
-    cp = ws.DetectWaves.CPWavesFFTSpec(tSpec,freq,efft,pfft,N0)
+    cp = ws.DetectWaves.CPWavesFFTSpec(tSpec*3600,freq,efft,pfft,N0)
     return cp
 
 

@@ -31,29 +31,35 @@ def _combineData(dataList):
     for d in dataList:
         if d is not None:
             dtype = d['efft']
-            n += d['efft'].size
+            n += d['efft'].shape[0]
 
-    out['efft'] = np.recarray(n,dtype=dtype)
-    out['pfft'] = np.recarray(n,dtype=dtype)
+    out['efft'] = np.zeros((n,d['efft'].shape[1]),dtype='complex128')
+    out['pfft'] = np.zeros((n,d['efft'].shape[1]),dtype='complex128')
 
     p = 0
     for d in dataList:
         if d is not None:
-            l = d['efft'].size
+            l = d['efft'].shape[0]
             out['efft'][p:p+l] = d['efft']
             out['pfft'][p:p+l] = d['pfft']
             p += l
 
-    out['cp'] = {}
+    
     for d in dataList:
         if d is not None:
-            for k in d:
-                if k not in out['cp']:
-                    out['cp'][k] = []
-                out['cp'][k].append(d[k])
-
-    for k in out['cp']:
-        out['cp'] = np.concatenate(out['cp'][k])
+            cpkeys = list(d['cp'].keys())
+            break
+    
+    cp = {}
+    for key in cpkeys:
+        tmp = [d['cp'][key] for d in dataList if d is not None]
+        if len(tmp) > 0:
+            sh = tmp[0].shape
+            if len(sh) == 1:
+                cp[key] = np.concatenate(tmp)
+            else:
+                cp[key] = np.concatenate(tmp,axis=1)
+    out['cp'] = cp
 
     for d in dataList:
         if d is not None:
