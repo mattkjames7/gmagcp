@@ -9,6 +9,7 @@ from .tools.figText import figText
 import groundmag as gm
 from .data.getCrossPhase import getCrossPhase
 from . import profile
+from scipy.signal import savgol_filter
 
 
 class CrossPhase(object):
@@ -36,8 +37,8 @@ class CrossPhase(object):
 			return None
 
 						
-	def Plot(self,Param='Cpha_smooth',date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],zlog=False,scale=None,
-				cmap='seismic',zlabel='',nox=False,noy=False,ShowPP=True,ShowColorbar=True,PP='image',MaxDT=2.0):
+	def plot(self,Param='Cpha_smooth',date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],zlog=False,scale=None,
+				cmap='seismic_r',zlabel='',nox=False,noy=False,showColorbar=True,showEigenFreqs=True):
 		
 		
 		if date is None:
@@ -68,8 +69,8 @@ class CrossPhase(object):
 		spec = spec[t0:t1,f0:f1]	
 		
 		
-		ax = self._Plot(utc,freq,spec,fig=fig,maps=maps,zlog=zlog,
-				scale=scale,zlabel=zlabel,cmap=cmap,ShowColorbar=ShowColorbar)
+		ax = self._plot(utc,freq,spec,fig=fig,maps=maps,zlog=zlog,
+				scale=scale,zlabel=zlabel,cmap=cmap,showColorbar=showColorbar)
 		
 		
 		utclim = TT.ContUT(np.array([self.date,self.date]),np.array(ut))
@@ -93,6 +94,8 @@ class CrossPhase(object):
 		else:
 			ax.set_ylabel('$f$ (mHz)')
 			
+		if showEigenFreqs:
+			ax.scatter(self.cp['t']/3600.0,self.cp['f']*1000,color='black',zorder=2,marker='+')
 				
 		
 		title = '{:s}-{:s} mlat={:5.2f}, mlon={:5.2f}'.format(self.estn.upper(),self.pstn.upper(),self.pos['mlat'],self.pos['mlon'])
@@ -100,8 +103,8 @@ class CrossPhase(object):
 		return ax
 
 
-	def _Plot(self,xg,yg,grid,fig=None,maps=[1,1,0,0],zlog=False,
-					scale=None,zlabel='',cmap=None,ShowColorbar=True,**kwargs):
+	def _plot(self,xg,yg,grid,fig=None,maps=[1,1,0,0],zlog=False,
+					scale=None,zlabel='',cmap=None,showColorbar=True,**kwargs):
 		
 
 		#get the scale
@@ -110,7 +113,8 @@ class CrossPhase(object):
 				scale = [np.nanmin(grid[grid > 0]),np.nanmax(grid)]
 			else:
 				scale = [np.nanmin(grid),np.nanmax(grid)]
-				scale = [-np.nanmax(scale),np.nanmax(scale)]
+				smx = np.nanmax(np.abs(scale))
+				scale = [-smx,smx]
 		
 		#set norm
 		if zlog:
@@ -131,8 +135,8 @@ class CrossPhase(object):
 
 		
 		fig.subplots_adjust(right=0.9)
-		
-		if ShowColorbar:
+	
+		if showColorbar:
 			box = ax.get_position()
 			cax = plt.axes([0.01*box.width + box.x1,box.y0+0.1*box.height,box.width*0.0125,box.height*0.8])
 			cbar = fig.colorbar(sm,cax=cax)
@@ -141,22 +145,22 @@ class CrossPhase(object):
 		return ax
 		
 		
-	def GetSpectrum(self,ut,Param):
+	def getSpectrum(self,date,ut,Param):
 		
 		
-		utc = TT.ContUT(self.Date,ut)[0]
-		dt = np.abs(utc - self.utc)
+		utc = TT.ContUT(date,ut)[0]
+		dt = np.abs(utc - self.tspec)
 		I = np.argmin(dt)		
 		
-		spec = getattr(self,Param)
+		spec = self.cp.get(Param,self.cp['Cpha_smooth'])
 		
-		return self.utc[I],self.freq,spec[I]
+		return self.tspec[I],self.freq,spec[I]
 	
 	
-	def PlotSpectrum(self,ut,Param,flim=None,fig=None,maps=[1,1,0,0],
+	def plotSpectrum(self,date,ut,Param,flim=None,fig=None,maps=[1,1,0,0],
 				nox=False,noy=False,ylog=False,label=None,dy=0.0):
 		
-		utc,freq,spec = self.GetSpectrum(ut,Param)
+		utc,freq,spec = self.getSpectrum(date,ut,Param)
 		
 		if fig is None:
 			fig = plt
@@ -195,22 +199,103 @@ class CrossPhase(object):
 		return ax		
 
 
-	def PlotEigenfrequencies(self,ut=[0.0,24.0],**kwargs):
+	def plotEigenfrequencies(self,date=None,ut=[0.0,24.0],**kwargs):
 		'''
 		Plot average eigenfrequencies using a subset of 
 		crossphase spectra.
 	
 		'''
 		
-		if np.size(ut[0]) == 1:
-			use = np.where((self.ut >= ut[0]) & (self.ut <= ut[1]))[0]
+		if date is None:
+			t0 = self.tspec[0]
+			t1 = self.tspec[-1]
 		else:
-			keep = np.zeros(self.ut.size,dtype='bool')
-			for u in ut:
-				k = np.where((self.ut >= u[0]) & (self.ut <= u[1]))[0]
-				keep[k] = True
-			use = np.where(keep)[0]
-		t = self.ut[use]
+			t0,t1 = TT.ContUT([np.min(date),np.max(date)],ut)
+			
+
+		use = np.where((self.tspec >= t0) & (self.tspec <= t1))[0]
+
+		t = self.tspec[use]
 		f = self.freq
 		P = self.cp['Cpha_smooth'][use]
-		return PlotCPEigenfreqs(f,P,**kwargs)
+		return self._plotCPEigenfreqs(f,P,**kwargs)
+
+
+
+	def _plotCPEigenfreqs(self,f,P,fig=None,maps=[1,1,0,0],nox=False,
+						legend=True,ShowPeaks=True,ShowTroughs=True,Class=None):
+		'''
+		f : float
+			Frequency array, Hz
+		P : float
+			CrossPhase (nt,nf) nt: number of time elements, nf: number of frequency elements.
+
+		'''
+		
+		
+		
+		#calculate mean and stdev
+		mu = np.nanmean(P,axis=0)
+		sd = np.nanstd(P,axis=0)
+
+		#calculate frequency array
+		F = 1000.0*f
+		
+		
+		if fig is None:
+			fig = plt
+			fig.figure()
+		if hasattr(fig,'Axes'):	
+			ax = fig.subplot2grid((maps[1],maps[0]),(maps[3],maps[2]))
+		else:
+			ax = fig
+
+		ax.fill(np.append(F,F[::-1]),np.append(mu + sd,(mu - sd)[::-1]),color='grey',label=r'$\mu \pm \sigma$')
+		ax.plot(F,mu,color='red',label=r'$\mu$')
+		ax.plot([F[0],F[-1]],[0.0,0.0],color='black',linestyle='--')
+		
+		
+		mu = savgol_filter(mu,11,3)
+		
+		if ShowPeaks:
+			
+			#find peaks
+			pk = np.where((mu[1:-1] > mu[:-2]) & (mu[1:-1] > mu[2:]) & (mu[1:-1] > 5.0))[0]
+			if pk.size > 0:
+				pk = pk + 1
+				yl = ax.get_ylim()
+				ym = np.mean(yl)
+				ax.set_ylim(yl)
+				fpk = F[pk]
+				ax.vlines(fpk,yl[0],yl[1],color='black',zorder=2,linestyle=':')
+				for f in fpk:
+					ax.text(f,ym,'$f$={:4.1f}'.format(f),rotation=90.0,ha='left',va='center')
+		if ShowTroughs:
+			#find peaks
+			pk = np.where((mu[1:-1] < mu[:-2]) & (mu[1:-1] < mu[2:]) & (mu[1:-1] < -5.0))[0]
+			if pk.size > 0:
+				pk = pk + 1
+				yl = ax.get_ylim()
+				ym = np.mean(yl)
+				ax.set_ylim(yl)
+				fpk = F[pk]
+				ax.vlines(fpk,yl[0],yl[1],color='black',zorder=2,linestyle=':')
+				for f in fpk:
+					ax.text(f,ym,'$f$={:4.1f}'.format(f),rotation=90.0,ha='left',va='center')
+		
+		
+		if legend:		
+			ax.legend()
+		
+		if nox:
+			ax.set_xticks(ax.get_xticks())
+			ax.set_xticklabels(np.size(ax.get_xticks())*[''])
+		else:
+			ax.set_xlabel('Frequency (mHz)')
+		ax.set_xlim(F[0],F[-1])
+		ax.set_ylabel(r'$\times$Phase ($^\circ$)')
+		if not Class is None:
+			ax.text(0.01,0.99,'Class {:d}'.format(Class+1),ha='left',va='top',transform=ax.transAxes)
+
+		return ax
+

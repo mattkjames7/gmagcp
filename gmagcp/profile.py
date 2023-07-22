@@ -6,13 +6,13 @@ import os
 default = {
     'name' : 'default',
     'method' : 'fft',
-    'window' : 1800.0,
-    'slip' : 600.0,
+    'window' : 2400.0,
+    'slip' : 300.0,
     'freq0' : 0.0,
-    'freq1' : 0.1,
+    'freq1' : 0.05,
     'detrend' : 2,
-    'lowPassFilter' : 0.05,
-    'highPassFilter' : 0.0001,
+    'lowPassFilter' : None,
+    'highPassFilter' : 0.000625,
     'windowFunc' : 'none',
 }
 
