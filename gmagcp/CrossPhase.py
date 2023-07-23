@@ -79,7 +79,9 @@ class CrossPhase(object):
 		
 		if nox:
 			ax.set_xlabel('')
-			n = len(ax.get_xticks())
+			xt = ax.get_xticks()
+			ax.set_xticks(xt)
+			n = len(xt)
 			lab = ['']*n
 			ax.set_xticklabels(lab)
 		else:
@@ -88,11 +90,14 @@ class CrossPhase(object):
 		
 		if noy:
 			ax.set_ylabel('')
-			n = len(ax.get_yticks())
+			yt = ax.get_yticks()
+			ax.set_yticks(yt)
+			n = len(yt)
 			lab = ['']*n
 			ax.set_yticklabels(lab)
 		else:
 			ax.set_ylabel('$f$ (mHz)')
+		ax.set_xlim(utclim)
 			
 		if showEigenFreqs:
 			ax.scatter(self.cp['t']/3600.0,self.cp['f']*1000,color='black',zorder=2,marker='+')
@@ -134,7 +139,7 @@ class CrossPhase(object):
 		sm = ax.pcolormesh(xg,yg,grid.T,cmap=cmap,norm=norm)
 
 		
-		fig.subplots_adjust(right=0.9)
+		fig.subplots_adjust(right=0.85)
 	
 		if showColorbar:
 			box = ax.get_position()
@@ -299,3 +304,239 @@ class CrossPhase(object):
 
 		return ax
 
+
+	def plotCPlargest(self,date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],
+			nox=False,noy=False,showColorBar=True,showEigenFreqs=False):
+
+
+		ax = self.plot(
+			Param='Cpha_largest',
+			date=date,
+			ut=ut,
+			flim=flim,
+			fig=fig,
+			maps=maps,
+			zlog=False,
+			scale=[-90,90],
+			cmap='seismic_r',
+			zlabel='Dominant\nx-phase',
+			nox=nox,
+			noy=noy,
+			showColorbar=showColorBar,
+			showEigenFreqs=showEigenFreqs
+		)
+		return ax
+	
+
+
+	def plotCPsmooth(self,date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],
+			nox=False,noy=False,showColorBar=True,showEigenFreqs=False):
+
+
+		ax = self.plot(
+			Param='Cpha_smooth',
+			date=date,
+			ut=ut,
+			flim=flim,
+			fig=fig,
+			maps=maps,
+			zlog=False,
+			scale=[-90,90],
+			cmap='seismic_r',
+			zlabel='Smoothed\nx-phase',
+			nox=nox,
+			noy=noy,
+			showColorbar=showColorBar,
+			showEigenFreqs=showEigenFreqs
+		)
+		return ax
+	
+
+	def plotCP(self,date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],
+			nox=False,noy=False,showColorBar=True,showEigenFreqs=False):
+
+
+		ax = self.plot(
+			Param='Cpha',
+			date=date,
+			ut=ut,
+			flim=flim,
+			fig=fig,
+			maps=maps,
+			zlog=False,
+			scale=[-90,90],
+			cmap='seismic_r',
+			zlabel='x-phase',
+			nox=nox,
+			noy=noy,
+			showColorbar=showColorBar,
+			showEigenFreqs=showEigenFreqs
+		)
+		return ax
+	
+	
+	def plotCPfinal(self,date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],
+			nox=False,noy=False,showColorBar=True,showEigenFreqs=True):
+
+
+		ax = self.plot(
+			Param='Cpha_surv',
+			date=date,
+			ut=ut,
+			flim=flim,
+			fig=fig,
+			maps=maps,
+			zlog=False,
+			scale=[-90,90],
+			cmap='seismic_r',
+			zlabel='Final\nx-phase',
+			nox=nox,
+			noy=noy,
+			showColorbar=showColorBar,
+			showEigenFreqs=showEigenFreqs
+		)
+		return ax
+	
+	def plotPowerRatio(self,date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],
+			nox=False,noy=False,showColorBar=True,showEigenFreqs=False):
+
+
+		ax = self.plot(
+			Param='PR',
+			date=date,
+			ut=ut,
+			flim=flim,
+			fig=fig,
+			maps=maps,
+			zlog=False,
+			scale=[0,4],
+			cmap='Greens',
+			zlabel='Power\nRatio',
+			nox=nox,
+			noy=noy,
+			showColorbar=showColorBar,
+			showEigenFreqs=showEigenFreqs
+		)
+		return ax
+	
+	
+	def plotTstat(self,date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],
+			nox=False,noy=False,showColorBar=True,showEigenFreqs=False):
+
+
+		ax = self.plot(
+			Param='ttest',
+			date=date,
+			ut=ut,
+			flim=flim,
+			fig=fig,
+			maps=maps,
+			zlog=False,
+			scale=[0,2],
+			cmap='Greys',
+			zlabel='t-statisitic',
+			nox=nox,
+			noy=noy,
+			showColorbar=showColorBar,
+			showEigenFreqs=showEigenFreqs
+		)
+		return ax
+	
+	def plotCrossPower(self,date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],
+			nox=False,noy=False,showColorBar=True,showEigenFreqs=False):
+
+
+		ax = self.plot(
+			Param='Cpow',
+			date=date,
+			ut=ut,
+			flim=flim,
+			fig=fig,
+			maps=maps,
+			zlog=True,
+			scale=[1e-2,1e4],
+			cmap='Blues',
+			zlabel='x-power',
+			nox=nox,
+			noy=noy,
+			showColorbar=showColorBar,
+			showEigenFreqs=showEigenFreqs
+		)
+		return ax
+	
+	def plotBx(self,date=None,ut=[0.0,24.0],fig=None,maps=[1,1,0,0],nox=False,noy=False,dB=200.0):
+
+
+		if fig is None:
+			fig = plt
+			fig.figure()
+		if hasattr(fig,'Axes'):	
+			ax = fig.subplot2grid((maps[1],maps[0]),(maps[3],maps[2]))
+		else:
+			ax = fig
+
+
+		emu = np.nanmean(self.edata.Bx)
+		pmu = np.nanmean(self.pdata.Bx)
+
+
+		ax.plot(self.edata.utc,self.edata.Bx-emu,color='black')
+		ax.plot(self.pdata.utc,self.pdata.Bx-pmu+dB,color='black')
+
+
+		if date is None:
+			date = [np.min(self.date),np.max(self.date)]
+
+		utclim = TT.ContUT(np.array([self.date,self.date]),np.array(ut))
+		ax.set_xlim(utclim)
+
+		xt = 1.02*(utclim[1] - utclim[0]) + utclim[0]
+		ax.text(xt,0.0,self.estn,color='black',clip_on=False)
+		ax.text(xt,dB,self.pstn,color='black',clip_on=False)
+
+
+		if nox:
+			ax.set_xlabel('')
+			xt = ax.get_xticks()
+			ax.set_xticks(xt)
+			n = len(xt)
+			lab = ['']*n
+			ax.set_xticklabels(lab)
+		else:
+			ax.set_xlabel('UT')
+			TT.DTPlotLabel(ax)
+		
+		if noy:
+			ax.set_ylabel('')
+			yt = ax.get_yticks()
+			ax.set_yticks(yt)
+			n = len(yt)
+			lab = ['']*n
+			ax.set_yticklabels(lab)
+		else:
+			ax.set_ylabel('$B_h$ (nT)')
+		ax.set_xlim(utclim)
+
+		return ax
+	
+
+	def plotPage(self,date=None,ut=[0.0,24.0]):
+		
+		plt.figure(figsize=(8,11))
+		fig = plt
+		ax0 = self.plotBx(fig=fig,maps=[1,8,0,0],nox=True)
+		ax1 = self.plotCrossPower(fig=fig,maps=[1,8,0,1],nox=True)
+		ax2 = self.plotCP(fig=fig,maps=[1,8,0,2],nox=True)
+		ax3 = self.plotPowerRatio(fig=fig,maps=[1,8,0,3],nox=True)
+		ax4 = self.plotCPsmooth(fig=fig,maps=[1,8,0,4],nox=True)
+		ax5 = self.plotCPlargest(fig=fig,maps=[1,8,0,5],nox=True)
+		ax6 = self.plotTstat(fig=fig,maps=[1,8,0,6],nox=True)
+		ax7 = self.plotCPfinal(fig=fig,maps=[1,8,0,7])
+
+		if date is None:
+			date = [np.min(self.date),np.max(self.date)]
+		plt.subplots_adjust(top=0.93)
+		h0,m0,_,_ = TT.DectoHHMM(ut[0])
+		h1,m1,_,_ = TT.DectoHHMM(ut[1])
+		plt.suptitle('{:s}-{:s}\n{:08d}T{:02d}:{:02d} - {:08d}T{:02d}:{:02d}'.format(self.estn,self.pstn,date[0],h0[0],m0[0],date[1],h1[0],m1[0]))
+		
