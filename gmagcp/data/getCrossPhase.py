@@ -55,10 +55,14 @@ def _combineData(dataList):
         tmp = [d['cp'][key] for d in dataList if d is not None]
         if len(tmp) > 0:
             sh = tmp[0].shape
-            if len(sh) == 1:
+            if key == 'F':
+                cp[key] = tmp[0]
+            elif key == 'Tax':
+                cp[key] = np.concatenate([t[:-1] for t in tmp]+[[tmp[-1][-1]]])
+            elif len(sh) == 1:
                 cp[key] = np.concatenate(tmp)
             else:
-                cp[key] = np.concatenate(tmp,axis=1)
+                cp[key] = np.concatenate(tmp,axis=0)
     out['cp'] = cp
 
     for d in dataList:
