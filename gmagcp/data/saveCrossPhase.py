@@ -79,29 +79,7 @@ def _magPos(date,estn,pstn,tspec):
 
 
 def saveCrossPhase(date,estn,pstn):
-
-    #process the data
-    edata,pdata = _processData(date,estn,pstn)
-
-    #fft the data
-    tSpec,freq,efft,pfft = _fftData(date,edata,pdata)
-
-    #cross phase
-    cp = _cpData(tSpec,freq,efft,pfft)
-
-    #get the magnetometer position for tracing
-    pos = _magPos(date,estn,pstn,tSpec)
-
-    out = {
-        'edata' : edata,
-        'pdata' : pdata,
-        'efft' : efft,
-        'pfft' : pfft,
-        'cp' : cp,
-        'pos' : pos
-    }
-
-    #save
+    
     cfg = profile.get()
     checkPath(cfg['specPath'])
 
@@ -110,5 +88,33 @@ def saveCrossPhase(date,estn,pstn):
         os.makedirs(pairPath)
 
     fname = pairPath + '/{:08d}.bin'.format(date)
-    pf.SaveObject(out,fname)
-    print('Saved: ',fname)
+
+    try:
+        #process the data
+        edata,pdata = _processData(date,estn,pstn)
+
+        #fft the data
+        tSpec,freq,efft,pfft = _fftData(date,edata,pdata)
+
+        #cross phase
+        cp = _cpData(tSpec,freq,efft,pfft)
+
+        #get the magnetometer position for tracing
+        pos = _magPos(date,estn,pstn,tSpec)
+
+        out = {
+            'edata' : edata,
+            'pdata' : pdata,
+            'efft' : efft,
+            'pfft' : pfft,
+            'cp' : cp,
+            'pos' : pos
+        }
+
+        #save
+
+        pf.SaveObject(out,fname)
+        print('Saved: ',fname)
+    except:
+        print('Saving {:s} failed, creating empty file...'.format(fname))
+        os.system('touch '+fname)

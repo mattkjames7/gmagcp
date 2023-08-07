@@ -10,6 +10,7 @@ import groundmag as gm
 from .data.getCrossPhase import getCrossPhase
 from . import profile
 from scipy.signal import savgol_filter
+from .data.saveCrossPhase import saveCrossPhase
 
 
 class CrossPhase(object):
@@ -38,7 +39,7 @@ class CrossPhase(object):
 
 						
 	def plot(self,Param='Cpha_smooth',date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],zlog=False,scale=None,
-				cmap='seismic_r',zlabel='',nox=False,noy=False,showColorbar=True,showEigenFreqs=True):
+				cmap='seismic_r',zlabel='',nox=False,noy=False,showColorbar=True,showEigenFreqs=True,colspan=1,rowspan=1):
 		
 		
 		if date is None:
@@ -70,7 +71,154 @@ class CrossPhase(object):
 		
 		
 		ax = self._plot(utc,freq,spec,fig=fig,maps=maps,zlog=zlog,
-				scale=scale,zlabel=zlabel,cmap=cmap,showColorbar=showColorbar)
+				scale=scale,zlabel=zlabel,cmap=cmap,showColorbar=showColorbar,colspan=colspan,rowspan=rowspan)
+		
+		
+		utclim = TT.ContUT(np.array([self.date,self.date]),np.array(ut))
+		ax.set_xlim(utclim)
+		ax.set_ylim(flim)
+		
+		if nox:
+			ax.set_xlabel('')
+			xt = ax.get_xticks()
+			ax.set_xticks(xt)
+			n = len(xt)
+			lab = ['']*n
+			ax.set_xticklabels(lab)
+		else:
+			ax.set_xlabel('UT')
+			TT.DTPlotLabel(ax)
+		
+		if noy:
+			ax.set_ylabel('')
+			yt = ax.get_yticks()
+			ax.set_yticks(yt)
+			n = len(yt)
+			lab = ['']*n
+			ax.set_yticklabels(lab)
+		else:
+			ax.set_ylabel('$f$ (mHz)')
+		ax.set_xlim(utclim)
+			
+		if showEigenFreqs:
+			ax.scatter(self.cp['t']/3600.0,self.cp['f']*1000,color='black',zorder=2,marker='+')
+				
+		
+		title = '{:s}-{:s} mlat={:5.2f}, mlon={:5.2f}'.format(self.estn.upper(),self.pstn.upper(),self.pos['mlat'],self.pos['mlon'])
+		figText(ax,0.01,0.99,title,color='black',transform=ax.transAxes,ha='left',va='top')
+		return ax
+
+	def plotFFTe(self,date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],zlog=True,scale=None,
+				cmap='gnuplot',nox=False,noy=False,showColorbar=True,showEigenFreqs=True,colspan=1,rowspan=1):
+
+		if date is None:
+			date = [np.min(self.date),np.max(self.date)]
+		
+
+		#get ut range
+		ut0,ut1 = TT.ContUT(date,ut)
+
+		uset = np.where((self.tspec >= ut0) & (self.tspec <= ut1))[0]
+		t0 = uset[0]
+		t1 = uset[-1] + 1
+		utc = self.tax[t0:t1+1]
+
+
+		#and frequency range
+		if flim is None:
+			f0 = 0
+			f1 = self.freq.size
+			flim = np.array([self.freqax[0],self.freqax[-1]])*1000.0
+		else:
+			usef = np.where((self.freq*1000.0 >= flim[0]) & (self.freq*1000.0 <= flim[1]))[0]
+			f0 = usef[0]
+			f1 = usef[-1] + 1
+		freq = self.freqax[f0:f1+1]*1000.0
+		
+		spec = np.abs(self.efft)**2
+		spec = spec[t0:t1,f0:f1]	
+		if scale is None:
+			if zlog:
+				scale = [np.nanmin(spec[spec > 0]),np.nanmax(spec)]
+			else:
+				scale = [np.nanmin(spec),np.nanmax(spec)]
+
+		ax = self._plot(utc,freq,spec,fig=fig,maps=maps,zlog=zlog,
+				scale=scale,zlabel='Power\n{:s}'.format(self.estn),cmap=cmap,showColorbar=showColorbar,colspan=colspan,rowspan=rowspan)
+		
+		
+		utclim = TT.ContUT(np.array([self.date,self.date]),np.array(ut))
+		ax.set_xlim(utclim)
+		ax.set_ylim(flim)
+		
+		if nox:
+			ax.set_xlabel('')
+			xt = ax.get_xticks()
+			ax.set_xticks(xt)
+			n = len(xt)
+			lab = ['']*n
+			ax.set_xticklabels(lab)
+		else:
+			ax.set_xlabel('UT')
+			TT.DTPlotLabel(ax)
+		
+		if noy:
+			ax.set_ylabel('')
+			yt = ax.get_yticks()
+			ax.set_yticks(yt)
+			n = len(yt)
+			lab = ['']*n
+			ax.set_yticklabels(lab)
+		else:
+			ax.set_ylabel('$f$ (mHz)')
+		ax.set_xlim(utclim)
+			
+		if showEigenFreqs:
+			ax.scatter(self.cp['t']/3600.0,self.cp['f']*1000,color='black',zorder=2,marker='+')
+				
+		
+		title = '{:s}-{:s} mlat={:5.2f}, mlon={:5.2f}'.format(self.estn.upper(),self.pstn.upper(),self.pos['mlat'],self.pos['mlon'])
+		figText(ax,0.01,0.99,title,color='black',transform=ax.transAxes,ha='left',va='top')
+		return ax
+
+
+	def plotFFTp(self,date=None,ut=[0.0,24.0],flim=None,fig=None,maps=[1,1,0,0],zlog=True,scale=None,
+				cmap='gnuplot',nox=False,noy=False,showColorbar=True,showEigenFreqs=True,colspan=1,rowspan=1):
+
+		if date is None:
+			date = [np.min(self.date),np.max(self.date)]
+		
+
+		#get ut range
+		ut0,ut1 = TT.ContUT(date,ut)
+
+		uset = np.where((self.tspec >= ut0) & (self.tspec <= ut1))[0]
+		t0 = uset[0]
+		t1 = uset[-1] + 1
+		utc = self.tax[t0:t1+1]
+
+
+		#and frequency range
+		if flim is None:
+			f0 = 0
+			f1 = self.freq.size
+			flim = np.array([self.freqax[0],self.freqax[-1]])*1000.0
+		else:
+			usef = np.where((self.freq*1000.0 >= flim[0]) & (self.freq*1000.0 <= flim[1]))[0]
+			f0 = usef[0]
+			f1 = usef[-1] + 1
+		freq = self.freqax[f0:f1+1]*1000.0
+		
+		spec = np.abs(self.pfft)**2
+		spec = spec[t0:t1,f0:f1]	
+		if scale is None:
+			if zlog:
+				scale = [np.nanmin(spec[spec > 0]),np.nanmax(spec)]
+			else:
+				scale = [np.nanmin(spec),np.nanmax(spec)]
+
+		ax = self._plot(utc,freq,spec,fig=fig,maps=maps,zlog=zlog,
+				scale=scale,zlabel='Power\n{:s}'.format(self.pstn),cmap=cmap,showColorbar=showColorbar,colspan=colspan,rowspan=rowspan)
 		
 		
 		utclim = TT.ContUT(np.array([self.date,self.date]),np.array(ut))
@@ -109,7 +257,7 @@ class CrossPhase(object):
 
 
 	def _plot(self,xg,yg,grid,fig=None,maps=[1,1,0,0],zlog=False,
-					scale=None,zlabel='',cmap=None,showColorbar=True,**kwargs):
+					scale=None,zlabel='',cmap=None,showColorbar=True,colspan=1,rowspan=1,**kwargs):
 		
 
 		#get the scale
@@ -132,7 +280,7 @@ class CrossPhase(object):
 			fig = plt
 			fig.figure()
 		if hasattr(fig,'Axes'):	
-			ax = fig.subplot2grid((maps[1],maps[0]),(maps[3],maps[2]))
+			ax = fig.subplot2grid((maps[1],maps[0]),(maps[3],maps[2]),colspan=colspan,rowspan=rowspan)
 		else:
 			ax = fig
 			

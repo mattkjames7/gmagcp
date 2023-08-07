@@ -89,6 +89,8 @@ def getCrossPhase(date,estn,pstn):
     else:
         dates = TT.ListDates(date[0],date[1])
 
-    data = [readCrossPhase(d,estn,pstn) for d in dates]
+    data = [readCrossPhase(d,estn,pstn) for d in dates if d is not None]
+    if len(data) == 0:
+        return None
 
     return _combineData(data)
