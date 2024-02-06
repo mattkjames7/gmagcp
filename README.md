@@ -16,13 +16,13 @@ To build as a wheel:
 
 ```bash
 python3 setup.py bdist_wheel
-pip3 install dist/gmagcp-0.0.2-py3-none-any.whl
+pip3 install dist/gmagcp-0.0.1-py3-none-any.whl
 ```
 
 Or as source package:
 ```bash
 python3 setup.py sdist
-pip3 install dist/gmagcp-0.0.2.tar.gz
+pip3 install dist/gmagcp-0.0.1.tar.gz
 ```
 
 Set `$GMAGCP_PATH` to point to a directory which will contain cross-phase data
@@ -99,12 +99,20 @@ take the following arguments:
 
 For saving the cross-phase:
 ```python
-gmagcp.data.saveCrossPhase(20200101,"pel","muo")
+gmagcp.data.saveCrossPhase(20100101,"pel","muo")
 ```
 
 To read it:
 ```python
-cpobj = gmagcp.data.CrossPhase(20200101,"pel","muo")
+cpobj = gmagcp.data.CrossPhase(20100101,"pel","muo")
 ```
 where `cpobj` is an instance of `CrossPhase` which contains methods for 
-plotting spectra and input data.
+plotting spectra and input data. An example is using `plotPage()`:
+
+```python
+cpobj.plotPage()
+```
+
+which should produce a plot like this:
+
+![](example.png)
