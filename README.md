@@ -75,17 +75,17 @@ gmagcp.profile.create(**parameters)
 
 Obtain the parameters of an existing one by name:
 ```python
-params = gmagcp.read.read("profile0")
+params = gmagcp.profile.read("profile0")
 ```
 
 Set the current profile to use:
 ```python
-gmagcp.profiles.use("profile1")
+gmagcp.profile.use("profile1")
 ```
 
 Retrieve the profile currently in use:
 ```python
-parameters = gmagcp.profiles.get()
+parameters = gmagcp.profile.get()
 ```
 
 
@@ -104,7 +104,7 @@ gmagcp.data.saveCrossPhase(20100101,"pel","muo")
 
 To read it:
 ```python
-cpobj = gmagcp.data.CrossPhase(20100101,"pel","muo")
+cpobj = gmagcp.CrossPhase(20100101,"pel","muo")
 ```
 where `cpobj` is an instance of `CrossPhase` which contains methods for 
 plotting spectra and input data. An example is using `plotPage()`:
